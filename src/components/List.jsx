@@ -1,7 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
-import { addEmployee } from '../Redux toolkit/Slice/employeeslice';
+import { addEmployee } from '../Redux toolkit/Slice/employeeSlice';
 import 'ag-grid-community/styles/ag-grid.css'; 
 // import 'ag-grid-community/styles/ag-theme-alpine.css'; // Optional theme
 import { AgGridReact } from 'ag-grid-react';
