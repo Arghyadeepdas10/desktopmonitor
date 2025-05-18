@@ -1,12 +1,12 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { addEmployee } from '../Redux toolkit/Slice/employeeSlice';
 import 'ag-grid-community/styles/ag-grid.css'; 
-// import 'ag-grid-community/styles/ag-theme-alpine.css'; // Optional theme
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry } from 'ag-grid-community'; 
 ModuleRegistry.registerModules([AllCommunityModule]);
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 
 const List = () => {
@@ -21,10 +21,25 @@ const List = () => {
     });
 
     const [realTimeWebsites, setRealTimeWebsites] = useState({});
+    const [employeeStatus, setEmployeeStatus] = useState({});
+    const [deviceStatus, setDeviceStatus] = useState({});
+    const [recentActivity, setRecentActivity] = useState({});
+    const [activityLog, setActivityLog] = useState([]);
+    const [selectedEmployee, setSelectedEmployee] = useState(null);
+
 
     const employee = useSelector((state)=> state.employees);
 
+    const statusOptions = ["Online", "Offline", "Idle"];
     const dispatch = useDispatch();
+
+    const activityOptions = [
+    "Browsing Google",
+    "Watching YouTube",
+    "Reading Wikipedia",
+    "Coding on GitHub",
+    "Writing on Medium",
+  ];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -32,8 +47,38 @@ const List = () => {
     };
 
     const handleSubmit = () => {
-        console.log("Form Submitted", formData);
-        dispatch(addEmployee(formData));
+       const randomStatus =
+      statusOptions[Math.floor(Math.random() * statusOptions.length)];
+    const randomWebsite =
+      randomWebsites[Math.floor(Math.random() * randomWebsites.length)];
+
+    const newEmployee = {
+      ...formData,
+      status: randomStatus,
+      currentWebsite: randomWebsite,
+    };
+
+    dispatch(addEmployee(newEmployee));
+
+    setRealTimeWebsites((prevState) => ({
+      ...prevState,
+      [formData.employeeId]: randomWebsite,
+    }));
+
+    setEmployeeStatus((prevState) => ({
+      ...prevState,
+      [formData.employeeId]: randomStatus,
+    }));
+
+    setDeviceStatus((prevState) => ({
+      ...prevState,
+      [formData.employeeId]: Math.random() > 0.5 ? "Active" : "Inactive",
+    }));
+
+    setRecentActivity((prevState) => ({
+      ...prevState,
+      [formData.employeeId]: activityOptions[Math.floor(Math.random() * activityOptions.length)],
+    }));
         setFormData({
             employeeId: '',
             name: '',
@@ -43,6 +88,19 @@ const List = () => {
         });
         setOpen(false);
     };
+
+    const randomWebsites = [
+    "https://www.google.com",
+    "https://www.youtube.com",
+    "https://www.wikipedia.org",
+    "https://www.github.com",
+    "https://www.medium.com",
+    "https://www.reddit.com",
+    "https://www.amazon.com",
+    "https://www.netflix.com",
+    "https://www.linkedin.com",
+    "https://www.twitter.com",
+  ];
     
     const departmentOptions = [
         "Content Writer",
@@ -61,19 +119,26 @@ const List = () => {
         return 0;
       });
 
-      useEffect(() => {
-        const interval = setInterval(() => {
-          const updatedWebsites = employee.reduce((acc, emp) => {
-            acc[emp.employeeId] = `https://example-${Math.floor(
-              Math.random() * 100
-            )}.com`;
-            return acc;
-          }, {});
-          setRealTimeWebsites(updatedWebsites);
-        }, 8000);
-    
-        return () => clearInterval(interval);
-      }, [employee]);
+    useEffect(() => {
+    const interval = setInterval(() => {
+      const updatedWebsites = employee.reduce((acc, emp) => {
+        const randomIndex = Math.floor(Math.random() * randomWebsites.length);
+        acc[emp.employeeId] = randomWebsites[randomIndex];
+        return acc;
+      }, {});
+      setRealTimeWebsites(updatedWebsites);
+
+      const updatedStatus = employee.reduce((acc, emp) => {
+        const randomStatus =
+          statusOptions[Math.floor(Math.random() * statusOptions.length)];
+        acc[emp.employeeId] = randomStatus;
+        return acc;
+      }, {});
+      setEmployeeStatus(updatedStatus);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [employee]);
 
 
       const columnDefs = [
@@ -85,14 +150,55 @@ const List = () => {
         {
             headerName: "Current Website",
             field: "currentWebsite",
-            cellRenderer: (params) => realTimeWebsites[params.data.employeeId] || "N/A",
+            cellRenderer: (params) => realTimeWebsites[params.data.employeeId],
           },
+          {
+                  headerName: "Status",
+                  field: "status",
+                  cellRenderer: (params) =>
+                    employeeStatus[params.data.employeeId],
+                },
       ];
 
+    const kpiData = {
+    Online: Object.values(employeeStatus).filter((status) => status === "Online")
+      .length,
+    Offline: Object.values(employeeStatus).filter(
+      (status) => status === "Offline"
+    ).length,
+    Idle: Object.values(employeeStatus).filter((status) => status === "Idle")
+      .length,
+  };
+
+   useEffect(() => {
+  if (selectedEmployee) {
+    const interval = setInterval(() => {
+      setActivityLog((prevLog) => [
+        ...prevLog.slice(-9),
+        {
+          time: new Date().toLocaleTimeString(),
+          status: Math.random() > 0.5 ? 1 : 0,
+        },
+      ]);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }
+}, [selectedEmployee]);
+
+  const cardColors = [
+    "#FFE4E1",
+    "#E6E6FA",
+    "#FFFACD",
+    "#F5FFFA",
+    "#E0FFFF",
+    "#FAFAD2",
+    "#FFEFD5",
+  ];
      
   return (
     <>
-      <div style={{marginTop:"20px"}}>
+    <div style={{marginTop:"20px"}}>
         <h1 style={{textAlign:"center", color:"red"}}>SJ DATA MANAGEMENT SYSTEM</h1>
     </div>
 
@@ -129,7 +235,6 @@ const List = () => {
               margin="normal"
               style={{ backgroundColor: '#fff' }}
             />
-            {/* <TextField fullWidth label="Department" name="department" value={formData.department} onChange={handleChange} variant="outlined" margin="normal" style={{ backgroundColor: '#fff' }} /> */}
 
             <TextField
                 select
@@ -182,39 +287,32 @@ const List = () => {
         </DialogActions>
       </Dialog>
 
-      {/* {employee.length > 0 && (
-        <TableContainer component={Paper} style={{ marginTop: '20px' }}>
-          <Table>
-            <TableHead style={{ backgroundColor: '#3f51b5' }}>
-              <TableRow>
-                <TableCell style={{ color: '#fff' }}>Employee ID</TableCell>
-                <TableCell style={{ color: '#fff' }}>Name</TableCell>
-                <TableCell style={{ color: '#fff' }}>Department</TableCell>
-                <TableCell style={{ color: '#fff' }}>Device Type</TableCell>
-                <TableCell style={{ color: '#fff' }}>Model Number</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-                {sortedEmployees.map((emp, index) => (
-                    <TableRow
-                    key={index}
-                    style={{
-                        backgroundColor: (emp.department === "Content Writer" || emp.department === "Graphic Designer")? "#ffe0b2"  : "inherit" }}
-                    >
-                    <TableCell>{emp.employeeId}</TableCell>
-                    <TableCell>{emp.name}</TableCell>
-                    <TableCell>{emp.department}</TableCell>
-                    <TableCell>{emp.deviceType}</TableCell>
-                    <TableCell>{emp.modelNumber}</TableCell>
-                    </TableRow>
-                ))}
-                </TableBody>
+      <div style={{ display: "flex", justifyContent: "space-around", marginTop: "20px" }}>
+          {Object.entries(kpiData).map(([status, count]) => (
+            <Card
+              key={status}
+              style={{
+                width: "250px",
+                textAlign: "center",
+                background: status === "Online" ? "#d1e7dd" : status === "Offline" ? "#f8d7da" : "#fff3cd",
+                boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+                borderRadius: "15px",
+              }}
+            >
+              <CardContent>
+                <Typography variant="h5" style={{ fontWeight: "bold" }}>
+                  {status}
+                </Typography>
+                <Typography variant="h6">{count} Employees</Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-          </Table>
-        </TableContainer>
-      )} */}
+
       {employee.length > 0 && (
-          <div className="ag-theme-alpine" style={{ height: 400, width: "100%", marginTop: "20px" }}>
+        <>
+        <div className="ag-theme-alpine" style={{ height: 400, width: "100%", marginTop: "20px" }}>
             <AgGridReact
               rowData={sortedEmployees}
               columnDefs={columnDefs}
@@ -229,6 +327,70 @@ const List = () => {
               }
             />
           </div>
+          
+          <div style={{ marginTop: "10px", padding:"10px", backgroundColor: "aqua", borderRadius: "15px" }}>
+
+          <h1 style={{ marginTop: "10px", textAlign: "center" }}>EMPLOYEE ACTIVITIES</h1>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", marginTop: "20px" }}>
+              {employee.map((emp, index) => (
+                <Card
+                    key={emp.employeeId}
+                    onClick={() => setSelectedEmployee(emp)} // Set the selected employee
+                    style={{
+                      cursor: "pointer",
+                      width: "300px",
+                      background: cardColors[index % cardColors.length],
+                      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+                      borderRadius: "15px",
+                      padding: "20px",
+                    }}
+                  >
+                  <CardContent>
+                    <Typography
+                      variant="h5"
+                      style={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        color: "#333",
+                      }}
+                    >
+                      {emp.name}
+                    </Typography>
+                    <Typography variant="subtitle1" style={{ margin: "10px 0", textAlign: "center" }}>
+                      Department: {emp.department}
+                    </Typography>
+                    <Typography variant="body1" style={{ margin: "10px 0" }}>
+                      <b>Device Status:</b> {deviceStatus[emp.employeeId]}
+                    </Typography>
+                    <Typography variant="body1" style={{ margin: "10px 0" }}>
+                      <b>Recent Activity:</b> {recentActivity[emp.employeeId] }
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+
+
+          {selectedEmployee && (
+              <div style={{ marginTop: "40px" }}>
+                <Typography variant="h6" style={{ textAlign: "center", marginBottom: "20px" }}>
+                  Real-Time Device Activity: {selectedEmployee.name}
+                </Typography>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={activityLog}>
+                      <XAxis dataKey="time" />
+                      <YAxis tickFormatter={(value) => (value === 1 ? "Active" : "Inactive")} />
+                      <Line type="monotone" dataKey="status" stroke="#8884d8" />
+                    </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+
+        </>
+          
         )}
     </div>
     </>
